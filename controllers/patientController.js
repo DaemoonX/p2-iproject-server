@@ -6,7 +6,8 @@ const { OAuth2Client } = require("google-auth-library");
 const CLIENT_ID = process.env.CLIENT_ID
 const client = new OAuth2Client(CLIENT_ID);
 const midtransClient = require('midtrans-client');
-
+const nodemailer = require('nodemailer');
+const { text } = require('body-parser');
 
 
 
@@ -27,16 +28,54 @@ class PatientController{
                 id: patient.id,
                 email
               });
+            
+            let transporter = nodemailer.createTransport({
+                service: 'gmail',
+                auth:{
+                    user: 'daemoon415@gmail.com',
+                    pass: 'tokwjxglkluscbci'
+                }
+            })
+
+            let mailOption = {
+                from: 'adminJD@gmail.com',
+                to: email,
+                subject: 'Welcome to Janji Dokter,',
+                text: 'Hopefully its make you easier to consult with our doctor'
+            }
+
+            transporter.sendMail(mailOption, (error, info)=>{
+                if(error){
+                    console.log(error);
+                }else{
+                    console.log('Email sent:' + info.response);
+                }
+            })
         } catch (error) {
-            console.log(error);
+            console.log(error.name);
+            next(error)
         }
     }
 
     static async login(req, res, next){
         try {
             let { email, password } = req.body;
+
+            if (!email || !password) {
+                throw { name: "EmailOrPasswordRequired" };
+              }
+
             let patient = await Patient.findOne({ where: { email } });
+
+            if (!patient) {
+                throw { name: "InvalidCredential" };
+              }
+
             let compared = compareHash(password, patient.password);
+
+            if (!compared) {
+                throw { name: "InvalidCredential" };
+              }
             
             let payload = {
                 id: patient.id,
@@ -47,6 +86,7 @@ class PatientController{
             res.status(200).json({access_token})
         } catch (error) {
             console.log(error);
+            next(error)
         }
     }
 
@@ -77,6 +117,28 @@ class PatientController{
                 res.status(200).json({access_token, email})
                 // If request specified a G Suite domain:
                 // const domain = payload['hd'];
+                let transporter = nodemailer.createTransport({
+                    service: 'gmail',
+                    auth:{
+                        user: 'daemoon415@gmail.com',
+                        pass: 'tokwjxglkluscbci'
+                    }
+                })
+    
+                let mailOption = {
+                    from: 'adminJD@gmail.com',
+                    to: email,
+                    subject: 'Welcome to Janji Dokter,',
+                    text: 'Hopefully its make you easier to consult with our doctor'
+                }
+    
+                transporter.sendMail(mailOption, (error, info)=>{
+                    if(error){
+                        console.log(error);
+                    }else{
+                        console.log('Email sent:' + info.response);
+                    }
+                })
             
         } catch (error) {
             console.log(error);
